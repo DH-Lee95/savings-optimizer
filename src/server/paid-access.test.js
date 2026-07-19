@@ -35,7 +35,7 @@ test("paid product is a one-week half-price launch offer at 1490 KRW", () => {
   assert.match(PAID_PRODUCT.promoText, /반값/);
 });
 
-test("paid access token can create one locked report for the purchased input", () => {
+test("paid access token can create one locked report for the purchased input", async () => {
   const store = createPaidAccessStore();
   const checkout = createPaidCheckout(store, {
     email: "paid@example.com",
@@ -43,7 +43,7 @@ test("paid access token can create one locked report for the purchased input", (
     mode: "mock",
   });
 
-  const result = consumePaidReportAccess(store, {
+  const result = await consumePaidReportAccess(store, {
     accessToken: checkout.accessToken,
     input: baseInput,
     excludedProductIds: [],
@@ -53,7 +53,7 @@ test("paid access token can create one locked report for the purchased input", (
   assert.equal(result.report.reportId, "report-base");
   assert.equal(result.entitlement.consumed, true);
 
-  assert.throws(() => consumePaidReportAccess(store, {
+  await assert.rejects(() => consumePaidReportAccess(store, {
     accessToken: checkout.accessToken,
     input: { ...baseInput, monthlySavings: 2000000 },
     excludedProductIds: [],
@@ -61,7 +61,7 @@ test("paid access token can create one locked report for the purchased input", (
   }), /PAID_INPUT_MISMATCH/);
 });
 
-test("same paid report can be recalculated only by excluding products, not by changing the paid input", () => {
+test("same paid report can be recalculated only by excluding products, not by changing the paid input", async () => {
   const store = createPaidAccessStore();
   const checkout = createPaidCheckout(store, {
     email: "paid@example.com",
@@ -69,14 +69,14 @@ test("same paid report can be recalculated only by excluding products, not by ch
     mode: "mock",
   });
 
-  consumePaidReportAccess(store, {
+  await consumePaidReportAccess(store, {
     accessToken: checkout.accessToken,
     input: baseInput,
     excludedProductIds: [],
     createReport: fakeReport,
   });
 
-  const recalculated = recalculatePaidReport(store, {
+  const recalculated = await recalculatePaidReport(store, {
     accessToken: checkout.accessToken,
     excludedProductIds: ["product-a"],
     createReport: fakeReport,
@@ -86,7 +86,7 @@ test("same paid report can be recalculated only by excluding products, not by ch
   assert.deepEqual(recalculated.report.inputSnapshot.excludedProductIds, ["product-a"]);
 });
 
-test("unpaid or already failed access cannot create a paid report", () => {
+test("unpaid or already failed access cannot create a paid report", async () => {
   const store = createPaidAccessStore();
   const checkout = createPaidCheckout(store, {
     email: "paid@example.com",
@@ -94,7 +94,7 @@ test("unpaid or already failed access cannot create a paid report", () => {
     mode: "pending",
   });
 
-  assert.throws(() => consumePaidReportAccess(store, {
+  await assert.rejects(() => consumePaidReportAccess(store, {
     accessToken: checkout.accessToken,
     input: baseInput,
     excludedProductIds: [],

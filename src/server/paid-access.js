@@ -128,7 +128,7 @@ export function createPaidCheckout(store, { email, input, mode = "mock" }) {
   };
 }
 
-export function consumePaidReportAccess(store, {
+export async function consumePaidReportAccess(store, {
   accessToken,
   input,
   excludedProductIds = [],
@@ -147,7 +147,7 @@ export function consumePaidReportAccess(store, {
     ...entitlement.lockedInput,
     excludedProductIds,
   };
-  const report = createReport(lockedInput);
+  const report = await createReport(lockedInput);
   const updated = store.update(accessToken, (current) => ({
     ...current,
     consumedAt: current.consumedAt ?? new Date().toISOString(),
@@ -161,7 +161,7 @@ export function consumePaidReportAccess(store, {
   };
 }
 
-export function recalculatePaidReport(store, {
+export async function recalculatePaidReport(store, {
   accessToken,
   excludedProductIds = [],
   createReport,
@@ -175,7 +175,7 @@ export function recalculatePaidReport(store, {
     ...entitlement.lockedInput,
     excludedProductIds,
   };
-  const report = createReport(lockedInput);
+  const report = await createReport(lockedInput);
   const updated = store.update(accessToken, (current) => ({
     ...current,
     reportId: report.reportId,

@@ -3,8 +3,6 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { extname, join, normalize, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { SAMPLE_PRODUCTS } from "../src/lib/products.js";
-import { createPaidReport } from "../src/lib/optimizer.js";
 import {
   PAID_PRODUCT,
   consumePaidReportAccess,
@@ -62,6 +60,14 @@ function paymentMode() {
   return process.env.NODE_ENV === "production" ? "pending" : "mock";
 }
 
+async function createServerPaidReport(input) {
+  const [{ createPaidReport }, { SAMPLE_PRODUCTS }] = await Promise.all([
+    import("../src/lib/optimizer.js"),
+    import("../src/lib/products.js"),
+  ]);
+  return createPaidReport(input, SAMPLE_PRODUCTS);
+}
+
 async function handleApi(request, response, url) {
   if (request.method === "GET" && url.pathname === "/api/product") {
     sendJson(response, 200, { product: PAID_PRODUCT, paymentMode: paymentMode() });
@@ -82,11 +88,11 @@ async function handleApi(request, response, url) {
 
   if (request.method === "POST" && url.pathname === "/api/reports") {
     const body = await readJsonBody(request);
-    const result = consumePaidReportAccess(accessStore, {
+    const result = await consumePaidReportAccess(accessStore, {
       accessToken: body.accessToken,
       input: body.input,
       excludedProductIds: body.excludedProductIds ?? [],
-      createReport: (input) => createPaidReport(input, SAMPLE_PRODUCTS),
+      createReport: createServerPaidReport,
     });
     persistAccessStore();
     sendJson(response, 200, result);
@@ -95,10 +101,10 @@ async function handleApi(request, response, url) {
 
   if (request.method === "POST" && url.pathname === "/api/reports/recalculate") {
     const body = await readJsonBody(request);
-    const result = recalculatePaidReport(accessStore, {
+    const result = await recalculatePaidReport(accessStore, {
       accessToken: body.accessToken,
       excludedProductIds: body.excludedProductIds ?? [],
-      createReport: (input) => createPaidReport(input, SAMPLE_PRODUCTS),
+      createReport: createServerPaidReport,
     });
     persistAccessStore();
     sendJson(response, 200, result);
@@ -147,7 +153,7 @@ const server = createServer(async (request, response) => {
 });
 
 const port = Number(process.env.PORT ?? 3002);
-const host = process.env.HOST ?? "127.0.0.1";
+const host = process.env.HOST ?? (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
 
 server.listen(port, host, () => {
   console.log(`Savings optimizer server listening at http://${host}:${port}`);
