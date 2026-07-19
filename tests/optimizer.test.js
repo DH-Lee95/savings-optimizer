@@ -756,7 +756,7 @@ test("monthly savings can be split across multiple optimal installment products 
   assert.deepEqual(allocations.map((allocation) => allocation.monthlyAmount), [500000, 600000, 400000]);
 });
 
-test("monthly savings distribution respects the user-selected maximum product count", () => {
+test("monthly savings distribution respects the user-selected maximum product count without leaving coverable savings unallocated", () => {
   const savingA = {
     ...products[3],
     id: "max-count-saving-a",
@@ -800,10 +800,11 @@ test("monthly savings distribution respects the user-selected maximum product co
   assert.equal(allocations.length, 2);
   assert.deepEqual(allocations.map((allocation) => allocation.productId), [
     "max-count-saving-a",
-    "max-count-saving-b",
+    "max-count-saving-c",
   ]);
-  assert.equal(report.plans.maxYield.unallocatedMonthlySavings, 400000);
-  assert.equal(report.plans.maxYield.totalPrincipal, 1100000 * 12);
+  assert.deepEqual(allocations.map((allocation) => allocation.monthlyAmount), [500000, 1000000]);
+  assert.equal(report.plans.maxYield.unallocatedMonthlySavings, 0);
+  assert.equal(report.plans.maxYield.totalPrincipal, 1500000 * 12);
 });
 
 test("single-use preferential conditions are consumed by only one recommended monthly product", () => {

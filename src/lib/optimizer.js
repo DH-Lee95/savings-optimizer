@@ -879,15 +879,22 @@ function allocateMonthlySavings(input, products, mode, context = {}) {
   const maxCount = maxAllocationCount(input);
 
   while (remaining > 0 && allocations.length < maxCount) {
-    const candidate = eligibleProducts(products, input, "installment", mode, context.conditionUsage)
-      .filter((item) => !selectedProductIds.has(item.product.id))[0];
+    const candidate = chooseMonthlyCandidate(
+      input,
+      products,
+      mode,
+      context,
+      selectedProductIds,
+      remaining,
+      months,
+      allocations.length,
+      maxCount,
+      (candidates) => [...candidates].sort((a, b) => b.score - a.score),
+    );
     if (!candidate) break;
     if (remaining <= 0) break;
-    const { product, rateInfo } = candidate;
-    const monthlyCapacity = getInstallmentMonthlyCapacity(product, months);
-    const monthlyAmount = Math.min(remaining, monthlyCapacity === Infinity ? remaining : monthlyCapacity);
+    const { product, rateInfo, monthlyAmount } = candidate;
     selectedProductIds.add(product.id);
-    if (product.minMonthlyAmount && monthlyAmount < product.minMonthlyAmount) continue;
     remaining -= monthlyAmount;
     pushAllocation(allocations, product, 0, monthlyAmount, rateInfo, Math.min(product.termMonths, months), input, {
       conditionUsage: context.conditionUsage,
@@ -917,6 +924,57 @@ function monthlyYieldRatio(candidate, input, months) {
   return testAmount > 0 ? benefit / testAmount : 0;
 }
 
+function monthlyCandidateCapacity(candidate, months) {
+  const capacity = getInstallmentMonthlyCapacity(candidate.product, months);
+  return capacity === Infinity ? Infinity : Math.max(0, capacity);
+}
+
+function maxCoverableMonthlyAmount(candidates, slotCount, months) {
+  if (slotCount === Infinity) return Infinity;
+  if (slotCount <= 0) return 0;
+
+  const capacities = candidates
+    .map((candidate) => monthlyCandidateCapacity(candidate, months))
+    .sort((a, b) => b - a)
+    .slice(0, slotCount);
+
+  if (capacities.includes(Infinity)) return Infinity;
+  return capacities.reduce((sum, capacity) => sum + capacity, 0);
+}
+
+function chooseMonthlyCandidate(input, products, mode, context, selectedProductIds, remaining, months, allocationsLength, maxCount, rankCandidates) {
+  const slotCountAfterCurrent = maxCount === Infinity ? Infinity : Math.max(0, maxCount - allocationsLength - 1);
+  const candidates = eligibleProducts(products, input, "installment", mode, context.conditionUsage)
+    .filter((item) => !selectedProductIds.has(item.product.id))
+    .map((item) => ({
+      ...item,
+      monthlyCapacity: monthlyCandidateCapacity(item, months),
+      yieldRatio: monthlyYieldRatio(item, input, months),
+    }))
+    .filter((item) => item.monthlyCapacity > 0 && item.yieldRatio > 0);
+
+  const ranked = rankCandidates(candidates);
+  for (const candidate of ranked) {
+    const futureCapacity = maxCoverableMonthlyAmount(
+      candidates.filter((item) => item.product.id !== candidate.product.id),
+      slotCountAfterCurrent,
+      months,
+    );
+    const requiredFromCandidate = Math.max(0, remaining - futureCapacity);
+    if (requiredFromCandidate > candidate.monthlyCapacity) continue;
+
+    const monthlyAmount = Math.min(remaining, candidate.monthlyCapacity === Infinity ? remaining : candidate.monthlyCapacity);
+    if (candidate.product.minMonthlyAmount && monthlyAmount < candidate.product.minMonthlyAmount) continue;
+    return { ...candidate, monthlyAmount };
+  }
+
+  const fallback = ranked[0];
+  if (!fallback) return null;
+  const monthlyAmount = Math.min(remaining, fallback.monthlyCapacity === Infinity ? remaining : fallback.monthlyCapacity);
+  if (fallback.product.minMonthlyAmount && monthlyAmount < fallback.product.minMonthlyAmount) return null;
+  return { ...fallback, monthlyAmount };
+}
+
 function allocateMonthlySavingsByYield(input, products, mode, context = {}) {
   let remaining = clampNumber(input.monthlySavings);
   const months = clampNumber(input.horizonMonths, 12);
@@ -925,21 +983,22 @@ function allocateMonthlySavingsByYield(input, products, mode, context = {}) {
   const maxCount = maxAllocationCount(input);
 
   while (remaining > 0 && allocations.length < maxCount) {
-    const candidate = eligibleProducts(products, input, "installment", mode, context.conditionUsage)
-      .filter((item) => !selectedProductIds.has(item.product.id))
-      .map((item) => ({
-        ...item,
-        monthlyCapacity: getInstallmentMonthlyCapacity(item.product, months),
-        yieldRatio: monthlyYieldRatio(item, input, months),
-      }))
-      .filter((item) => item.yieldRatio > 0)
-      .sort((a, b) => b.yieldRatio - a.yieldRatio)[0];
+    const candidate = chooseMonthlyCandidate(
+      input,
+      products,
+      mode,
+      context,
+      selectedProductIds,
+      remaining,
+      months,
+      allocations.length,
+      maxCount,
+      (candidates) => [...candidates].sort((a, b) => b.yieldRatio - a.yieldRatio),
+    );
     if (!candidate) break;
     if (remaining <= 0) break;
-    const { product, rateInfo, monthlyCapacity } = candidate;
-    const monthlyAmount = Math.min(remaining, monthlyCapacity === Infinity ? remaining : monthlyCapacity);
+    const { product, rateInfo, monthlyAmount } = candidate;
     selectedProductIds.add(product.id);
-    if (product.minMonthlyAmount && monthlyAmount < product.minMonthlyAmount) continue;
     remaining -= monthlyAmount;
     pushAllocation(allocations, product, 0, monthlyAmount, rateInfo, Math.min(product.termMonths, months), input, {
       conditionUsage: context.conditionUsage,

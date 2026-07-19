@@ -596,6 +596,14 @@ function inferEaseScore(channelText, conditions) {
   return Math.max(45, score);
 }
 
+function isBranchOnlyProduct(product) {
+  const channel = String(product.raw?.channelText ?? product.channelText ?? "").replace(/\s+/g, "");
+  if (!channel) return false;
+  const hasBranchChannel = /영업점|창구|대면/.test(channel);
+  const hasRemoteChannel = /앱|모바일|스마트폰|스마트뱅킹|인터넷|온라인|비대면|웹|i-?bank|뱅킹/.test(channel);
+  return hasBranchChannel && !hasRemoteChannel;
+}
+
 function daysBetween(from, to) {
   const start = new Date(`${from}T00:00:00+09:00`);
   const end = new Date(`${to}T00:00:00+09:00`);
@@ -618,6 +626,7 @@ export function validateProduct(product, options = {}) {
   if (product.type !== "parking" && !product.termMonths) errors.push("missing_term");
   if (!product.officialUrl) errors.push("missing_official_url");
   if (!product.updatedAt) errors.push("missing_updated_at");
+  if (isBranchOnlyProduct(product)) errors.push("branch_only");
 
   if (product.updatedAt && daysBetween(product.updatedAt, today) > staleAfterDays) {
     errors.push("stale_data");

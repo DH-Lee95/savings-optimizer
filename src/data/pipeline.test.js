@@ -413,3 +413,15 @@ test("builds active catalog only from approved valid products", () => {
   assert.equal(catalog.metadata.activeCount, 1);
   assert.equal(catalog.metadata.rejectedCount, 2);
 });
+
+test("builds active catalog without branch-only products while keeping mobile-capable products", () => {
+  const rawProducts = [
+    { ...rawProduct, productName: "모바일 가능 상품", channelText: "영업점, 스마트폰뱅킹", reviewStatus: "approved" },
+    { ...rawProduct, productName: "대면 전용 상품", channelText: "영업점, 창구", reviewStatus: "approved" },
+  ];
+
+  const catalog = buildActiveCatalog(rawProducts, { today: "2026-07-18" });
+
+  assert.deepEqual(catalog.activeProducts.map((product) => product.name), ["모바일 가능 상품"]);
+  assert.equal(catalog.rejectedProducts.find((product) => product.name === "대면 전용 상품").validationErrors.includes("branch_only"), true);
+});
