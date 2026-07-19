@@ -121,6 +121,33 @@ test("parseNaverEligibility does not mark military parent proxy wording as child
   assert.equal(eligibility.flags.includes("child"), false);
 });
 
+test("parseNaverEligibility does not treat youth future savings legal explanation as special-only profiles", () => {
+  const eligibility = parseNaverEligibility([
+    "청년미래적금 가입대상 만 19세 이상 만 34세 이하",
+    "병적증명서로 현역병, 상근예비역 및 사회복무요원 병역 이행 기간을 나이에서 차감",
+    "육아휴직급여 또는 복무 중인 병이 받는 급여가 있는 사람은 비과세소득만 있는 자로 보지 않음",
+    "가구원은 본인과 배우자, 부모, 자녀, 미성년 형제자매를 기준으로 판단",
+    "직전년도의 국민기초생활보장법 기준 중위소득 200% 이하",
+    "소상공인 여부는 중소기업현황정보시스템 확인서를 기준으로 판단",
+    "중소기업 재직자 우대형 또는 개인사업자 소상공인 유형은 정부기여금 유형 산정에 사용",
+  ].join(" "));
+
+  assert.ok(eligibility.flags.includes("youth"));
+  assert.ok(eligibility.flags.includes("age"));
+  assert.equal(eligibility.flags.includes("military"), false);
+  assert.equal(eligibility.flags.includes("child"), false);
+  assert.equal(eligibility.flags.includes("vulnerableGroup"), false);
+  assert.equal(eligibility.flags.includes("businessOwner"), false);
+  assert.equal(eligibility.flags.includes("smallBusinessEmployee"), false);
+});
+
+test("parseNaverEligibility extracts regional eligibility", () => {
+  const eligibility = parseNaverEligibility("전라남도 각 시청 전남청년문화복지카드 지원사업 선정자");
+
+  assert.ok(eligibility.flags.includes("regional"));
+  assert.deepEqual(eligibility.regions, ["jeonnam"]);
+});
+
 test("mapNaverSavingsResponseToRawProducts maps detailed Naver conditions to raw products", () => {
   const products = mapNaverSavingsResponseToRawProducts(naverListResponse, {
     productType: "installment",

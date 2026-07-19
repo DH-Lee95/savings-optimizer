@@ -37,3 +37,23 @@ test("active catalog marks military and child restricted products with profile e
     true,
   );
 });
+
+test("active catalog marks Jeonnam youth savings as regional eligibility", () => {
+  const product = SAMPLE_PRODUCTS.find((item) => item.name === "전남청년미래적금");
+
+  assert.ok(product);
+  assert.ok(product.eligibility?.flags?.includes("regional"));
+  assert.deepEqual(product.eligibility?.regions, ["jeonnam"]);
+});
+
+test("active catalog does not over-restrict ordinary youth future savings by legal explanation text", () => {
+  const products = SAMPLE_PRODUCTS.filter((item) => item.name.includes("청년미래적금") && item.name !== "전남청년미래적금");
+  const falseRestrictionFlags = ["military", "child", "vulnerableGroup", "businessOwner", "smallBusinessEmployee"];
+
+  assert.ok(products.length > 0);
+  for (const product of products) {
+    for (const flag of falseRestrictionFlags) {
+      assert.equal(product.eligibility?.flags?.includes(flag), false, `${product.bank} ${product.name} should not require ${flag}`);
+    }
+  }
+});

@@ -18,6 +18,7 @@ const state = {
   detail: {
     email: "",
     userBanks: ["국민은행"],
+    userRegion: "",
     salaryTransfer: true,
     cardSpend: false,
     autoDebit: true,
@@ -83,6 +84,7 @@ function getInput() {
       eventCoupon: state.detail.eventCoupon,
     },
     specialEligibility: { ...state.detail.personalEligibility },
+    userRegions: state.detail.userRegion ? [state.detail.userRegion] : [],
   };
 }
 
@@ -270,6 +272,7 @@ function renderDetail() {
           <span>현재 쓰는 은행</span>
           <input name="userBanks" value="${state.detail.userBanks.join(", ")}" placeholder="국민은행, 카카오뱅크" />
         </label>
+        ${selectInput("userRegion", "거주/근무/지원사업 지역", state.detail.userRegion, regionOptions(), "detail")}
         <section class="subsection">
           <h3>개인 가입 조건</h3>
           <div class="toggle-grid">
@@ -621,6 +624,29 @@ function toggle(name, label, checked) {
 
 function profileToggle(name, label) {
   return toggle(`personalEligibility.${name}`, label, state.detail.personalEligibility[name]);
+}
+
+function regionOptions() {
+  return [
+    ["", "지역 제한 상품 제외"],
+    ["seoul", "서울"],
+    ["busan", "부산"],
+    ["daegu", "대구"],
+    ["incheon", "인천"],
+    ["gwangju", "광주"],
+    ["daejeon", "대전"],
+    ["ulsan", "울산"],
+    ["sejong", "세종"],
+    ["gyeonggi", "경기"],
+    ["gangwon", "강원"],
+    ["chungbuk", "충북"],
+    ["chungnam", "충남"],
+    ["jeonbuk", "전북"],
+    ["jeonnam", "전남"],
+    ["gyeongbuk", "경북"],
+    ["gyeongnam", "경남"],
+    ["jeju", "제주"],
+  ];
 }
 
 function bindEvents() {

@@ -1058,6 +1058,51 @@ test("matches special profile eligibility before recommending restricted product
   assert.equal(matchedReport.plans.realistic.allocations[0].productName, "장병 우대 적금");
 });
 
+test("regional products require matching user region before recommendation", () => {
+  const regionalProduct = {
+    ...products[3],
+    id: "jeonnam-youth-saving",
+    bank: "광주은행",
+    name: "전남청년미래적금",
+    baseRate: 8,
+    maxRate: 8,
+    monthlyLimit: 300000,
+    eligibility: {
+      flags: ["regional"],
+      regions: ["jeonnam"],
+      sourceText: "전라남도 전남청년문화복지카드 지원사업 선정자",
+    },
+    conditions: [],
+  };
+  const fallback = {
+    ...products[3],
+    id: "open-saving-regional-fallback",
+    name: "일반 적금",
+    baseRate: 4,
+    maxRate: 4,
+    monthlyLimit: 300000,
+    conditions: [],
+  };
+
+  const defaultReport = optimizeSavings({
+    ...baseInput,
+    lumpSum: 0,
+    monthlySavings: 300000,
+    specialEligibility: {},
+    userRegions: [],
+  }, [regionalProduct, fallback]);
+  const matchedReport = optimizeSavings({
+    ...baseInput,
+    lumpSum: 0,
+    monthlySavings: 300000,
+    specialEligibility: {},
+    userRegions: ["jeonnam"],
+  }, [regionalProduct, fallback]);
+
+  assert.equal(defaultReport.plans.realistic.allocations[0].productName, "일반 적금");
+  assert.equal(matchedReport.plans.realistic.allocations[0].productName, "전남청년미래적금");
+});
+
 test("matches youth newlywed and income profile eligibility before recommending restricted products", () => {
   const youthProduct = {
     ...products[3],

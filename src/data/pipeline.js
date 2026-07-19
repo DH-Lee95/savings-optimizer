@@ -350,6 +350,7 @@ function inferWithdrawalPolicy(raw, type) {
 
 export function parseEligibilityText(value) {
   const text = String(value ?? "").replace(/\s+/g, " ").trim();
+  const regions = parseEligibleRegions(text);
   const eligibility = {
     flags: [],
     sourceText: text,
@@ -372,6 +373,7 @@ export function parseEligibilityText(value) {
 
   if (eligibility.minAge || eligibility.maxAge) eligibility.flags.push("age");
   if (eligibility.maxAnnualIncome) eligibility.flags.push("income");
+  const isYouthFutureSavings = /청년미래적금/.test(text);
   if (/청년|청년도약|청년미래|청년희망/.test(text)) eligibility.flags.push("youth");
   if (/신혼|예비\s*부부|결혼|혼인/.test(text)) eligibility.flags.push("newlywed");
   if (eligibility.maxAnnualIncome || /소득\s*요건|소득\s*조건/.test(text)) eligibility.flags.push("incomeEligible");
@@ -379,29 +381,87 @@ export function parseEligibilityText(value) {
   if (/급여\s*이체|월급/.test(text)) eligibility.flags.push("salaryTransfer");
   if (/카드|실적/.test(text)) eligibility.flags.push("cardSpend");
   if (/주거래|입출금통장/.test(text)) eligibility.flags.push("primaryBankChange");
-  if (/장병|군인|군\s*장병|전역|복무|병사|현역병|상근예비역|사회복무요원|대체복무요원|의무복무이행자|직업군인|부사관|장교/.test(text)) eligibility.flags.push("military");
-  if (/기초생활|차상위|희망나눔|취약/.test(text)) eligibility.flags.push("vulnerableGroup");
-  if (/장애/.test(text)) eligibility.flags.push("disability");
-  if (/유공/.test(text)) eligibility.flags.push("merit");
+  if (!isYouthFutureSavings && isMilitaryEligibilityText(text)) eligibility.flags.push("military");
+  if (!isYouthFutureSavings && isVulnerableGroupEligibilityText(text)) eligibility.flags.push("vulnerableGroup");
+  if (/장애인|장애\s*정도|장애\s*등록/.test(text)) eligibility.flags.push("disability");
+  if (/유공자|국가유공|독립유공/.test(text)) eligibility.flags.push("merit");
   if (/실버|백세|고령/.test(text)) eligibility.flags.push("senior");
-  if (/(?:아이사랑|우리아이|아이\s*꿈|아이키움|아이든든|아이통장|자녀|미성년자|법정대리인|조부모|손자녀|부모\s*및\s*자녀|자녀를\s*둔\s*(?:조)?부모)/.test(text)) eligibility.flags.push("child");
+  if (!isYouthFutureSavings && isChildEligibilityText(text)) eligibility.flags.push("child");
   if (/임신|출산/.test(text)) eligibility.flags.push("pregnancyOrBirth");
-  if (/사업자등록증|개인사업자|법인/.test(text)) eligibility.flags.push("businessOwner");
-  if (/중소기업|재직자/.test(text)) eligibility.flags.push("smallBusinessEmployee");
+  if (!isYouthFutureSavings && isBusinessOwnerEligibilityText(text)) eligibility.flags.push("businessOwner");
+  if (!isYouthFutureSavings && isSmallBusinessEmployeeEligibilityText(text)) eligibility.flags.push("smallBusinessEmployee");
   if (/장학|학생/.test(text)) eligibility.flags.push("student");
+  if (regions.length) {
+    eligibility.flags.push("regional");
+    eligibility.regions = regions;
+  }
 
   return eligibility;
+}
+
+const REGION_PATTERNS = [
+  ["seoul", /서울특별시|서울시|서울\s*(?:거주|소재|주소|주민|시민|청년)/],
+  ["busan", /부산광역시|부산시|부산\s*(?:거주|소재|주소|주민|시민|청년)/],
+  ["daegu", /대구광역시|대구시|대구\s*(?:거주|소재|주소|주민|시민|청년)/],
+  ["incheon", /인천광역시|인천시|인천\s*(?:거주|소재|주소|주민|시민|청년)/],
+  ["gwangju", /광주광역시|광주시|광주\s*(?:거주|소재|주소|주민|시민|청년)/],
+  ["daejeon", /대전광역시|대전시|대전\s*(?:거주|소재|주소|주민|시민|청년)/],
+  ["ulsan", /울산광역시|울산시|울산\s*(?:거주|소재|주소|주민|시민|청년)/],
+  ["sejong", /세종특별자치시|세종시|세종\s*(?:거주|소재|주소|주민|시민|청년)/],
+  ["gyeonggi", /경기도|경기\s*(?:거주|소재|주소|주민|도민|청년)/],
+  ["gangwon", /강원특별자치도|강원도|강원\s*(?:거주|소재|주소|주민|도민|청년)/],
+  ["chungbuk", /충청북도|충북\s*(?:거주|소재|주소|주민|도민|청년)/],
+  ["chungnam", /충청남도|충남\s*(?:거주|소재|주소|주민|도민|청년)/],
+  ["jeonbuk", /전북특별자치도|전라북도|전북(?!은행|저축은행)/],
+  ["jeonnam", /전라남도|전남(?!은행|저축은행)|전남청년문화복지카드/],
+  ["gyeongbuk", /경상북도|경북\s*(?:거주|소재|주소|주민|도민|청년)/],
+  ["gyeongnam", /경상남도|경남(?!은행|저축은행)/],
+  ["jeju", /제주특별자치도|제주도|제주\s*(?:거주|소재|주소|주민|도민|청년)/],
+];
+
+function parseEligibleRegions(text) {
+  return REGION_PATTERNS
+    .filter(([, pattern]) => pattern.test(text))
+    .map(([region]) => region);
+}
+
+function isMilitaryEligibilityText(text) {
+  return /군\s*장병(?!\s*(?:이\s*받는\s*)?급여)|장병내일준비\s*적금|군인\s*(?:우대)?\s*(?:적금|예금)|(?:장병|군\s*장병)[^.。•\n]{0,40}(?:적금|예금)/.test(text)
+    || /의무복무이행자\s*중\s*병급여체계\s*적용\s*대상\s*병사/.test(text)
+    || /(?:가입\s*시점|충족하는|한함)[^.]{0,80}(?:현역병|상근예비역|사회복무요원|대체복무요원|직업군인|부사관|장교)/.test(text)
+    || /(?:현역병|상근예비역|사회복무요원|대체복무요원|직업군인|부사관|장교)[^.。•\n]{0,80}에\s*한함/.test(text);
+}
+
+function isVulnerableGroupEligibilityText(text) {
+  return /기초생활\s*수급|차상위|희망나눔|취약\s*계층|한부모/.test(text);
+}
+
+function isChildEligibilityText(text) {
+  return /아이사랑|우리아이|아이\s*꿈|아이키움|아이든든|아이통장/.test(text)
+    || /만\s*\d+\s*세\s*(?:미만|이하)\s*(?:자녀|미성년자)[^.。•\n]{0,50}(?:둔|있는|부모|법정대리인|가입\s*가능|가입가능|가입대상)/.test(text)
+    || /(?:자녀|손자녀)[^.。•\n]{0,30}(?:둔|있는)\s*(?:부모|조부모|법정대리인)/.test(text)
+    || /법정대리인[^.。•\n]{0,50}(?:가입\s*가능|가입가능|자녀|미성년자)/.test(text);
+}
+
+function isBusinessOwnerEligibilityText(text) {
+  return /사업자등록증|개인사업자\s*(?:전용|대상|고객|가입)|법인\s*(?:고객|사업자|전용|가입)/.test(text);
+}
+
+function isSmallBusinessEmployeeEligibilityText(text) {
+  return /(?:중소기업|소상공인)[^.。•\n]{0,40}(?:재직|근로자|직원|임직원)|(?:재직자|근로자|직원|임직원)[^.。•\n]{0,40}(?:중소기업|소상공인)/.test(text);
 }
 
 function mergeEligibility(existing, inferred) {
   const base = existing ?? { flags: [], sourceText: "" };
   const flags = [...new Set([...(base.flags ?? []), ...(inferred.flags ?? [])])];
+  const regions = [...new Set([...(base.regions ?? []), ...(inferred.regions ?? [])])];
   return {
     ...base,
     ...Object.fromEntries(
-      Object.entries(inferred).filter(([key, value]) => key !== "flags" && key !== "sourceText" && value != null),
+      Object.entries(inferred).filter(([key, value]) => !["flags", "regions", "sourceText"].includes(key) && value != null),
     ),
     flags,
+    ...(regions.length ? { regions } : {}),
     sourceText: [base.sourceText, inferred.sourceText]
       .map((value) => String(value ?? "").trim())
       .filter(Boolean)

@@ -521,6 +521,11 @@ function matchesEligibility(product, input) {
 
   if (!eligibility) return true;
 
+  if ((eligibility.regions ?? []).length) {
+    const userRegions = new Set(input.userRegions ?? []);
+    if (![...eligibility.regions].some((region) => userRegions.has(region))) return false;
+  }
+
   if (eligibility.minAge || eligibility.maxAge) {
     if (input.specialEligibility?.youth !== true) {
       if (!input.age) return false;

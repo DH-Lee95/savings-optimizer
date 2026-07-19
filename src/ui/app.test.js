@@ -68,6 +68,8 @@ test("monthly savings app separates personal eligibility from actionable prefere
   assert.match(source, /청년/);
   assert.match(source, /신혼\/예비부부/);
   assert.match(source, /소득요건 충족/);
+  assert.match(source, /userRegion/);
+  assert.match(source, /거주\/근무\/지원사업 지역/);
 });
 
 test("monthly savings app captures financial sector limit", () => {

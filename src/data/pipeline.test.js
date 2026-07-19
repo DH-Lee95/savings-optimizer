@@ -346,6 +346,35 @@ test("eligibility parsing does not mark parent proxy wording in military product
   assert.equal(eligibility.flags.includes("child"), false);
 });
 
+test("eligibility parsing does not treat youth future savings legal explanation as special-only profiles", () => {
+  const eligibility = parseEligibilityText([
+    "청년미래적금 가입대상 만 19세 이상 만 34세 이하",
+    "병적증명서로 현역병, 상근예비역 및 사회복무요원 병역 이행 기간을 나이에서 차감",
+    "육아휴직급여 또는 복무 중인 병이 받는 급여가 있는 사람은 비과세소득만 있는 자로 보지 않음",
+    "가구원은 본인과 배우자, 부모, 자녀, 미성년 형제자매를 기준으로 판단",
+    "직전년도의 국민기초생활보장법 기준 중위소득 200% 이하",
+    "소상공인 여부는 중소기업현황정보시스템 확인서를 기준으로 판단",
+    "중소기업 재직자 우대형 또는 개인사업자 소상공인 유형은 정부기여금 유형 산정에 사용",
+  ].join(" "));
+
+  assert.ok(eligibility.flags.includes("youth"));
+  assert.ok(eligibility.flags.includes("age"));
+  assert.equal(eligibility.flags.includes("military"), false);
+  assert.equal(eligibility.flags.includes("child"), false);
+  assert.equal(eligibility.flags.includes("vulnerableGroup"), false);
+  assert.equal(eligibility.flags.includes("businessOwner"), false);
+  assert.equal(eligibility.flags.includes("smallBusinessEmployee"), false);
+});
+
+test("parses regional eligibility without treating bank names as regions", () => {
+  const jeonnam = parseEligibilityText("전라남도 각 시청 전남청년문화복지카드 지원사업 선정자");
+  const bankNameOnly = parseEligibilityText("경남은행 청년미래적금");
+
+  assert.ok(jeonnam.flags.includes("regional"));
+  assert.deepEqual(jeonnam.regions, ["jeonnam"]);
+  assert.equal(bankNameOnly.flags.includes("regional"), false);
+});
+
 test("validates required fields and stale data", () => {
   const active = { ...normalizeRawProduct(rawProduct), reviewStatus: "approved" };
   assert.equal(validateProduct(active, { today: "2026-07-18" }).ok, true);
