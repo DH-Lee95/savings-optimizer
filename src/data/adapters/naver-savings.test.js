@@ -106,6 +106,21 @@ test("parseNaverEligibility extracts special profile eligibility flags", () => {
   assert.ok(eligibility.flags.includes("businessOwner"));
 });
 
+test("parseNaverEligibility marks child and military products from strict eligibility wording", () => {
+  const military = parseNaverEligibility("현역병, 상근예비역, 사회복무요원, 대체복무요원에 한함");
+  const child = parseNaverEligibility("만 19세 미만 자녀를 둔 부모 또는 법정대리인 가입 가능");
+
+  assert.ok(military.flags.includes("military"));
+  assert.ok(child.flags.includes("child"));
+});
+
+test("parseNaverEligibility does not mark military parent proxy wording as child eligibility", () => {
+  const eligibility = parseNaverEligibility("장병내일준비적금 가입자격 확인서 제출, 부모에 의한 대리 가입 가능");
+
+  assert.ok(eligibility.flags.includes("military"));
+  assert.equal(eligibility.flags.includes("child"), false);
+});
+
 test("mapNaverSavingsResponseToRawProducts maps detailed Naver conditions to raw products", () => {
   const products = mapNaverSavingsResponseToRawProducts(naverListResponse, {
     productType: "installment",

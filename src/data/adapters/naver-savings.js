@@ -257,12 +257,12 @@ export function parseNaverEligibility(text) {
   if (/급여\s*이체|월급/.test(sourceText)) eligibility.flags.push("salaryTransfer");
   if (/카드|실적/.test(sourceText)) eligibility.flags.push("cardSpend");
   if (/주거래|입출금통장/.test(sourceText)) eligibility.flags.push("primaryBankChange");
-  if (/장병|군인|군\s*장병|전역|복무|병사/.test(sourceText)) eligibility.flags.push("military");
+  if (/장병|군인|군\s*장병|전역|복무|병사|현역병|상근예비역|사회복무요원|대체복무요원|의무복무이행자|직업군인|부사관|장교/.test(sourceText)) eligibility.flags.push("military");
   if (/기초생활|차상위|희망나눔|취약/.test(sourceText)) eligibility.flags.push("vulnerableGroup");
   if (/장애/.test(sourceText)) eligibility.flags.push("disability");
   if (/유공/.test(sourceText)) eligibility.flags.push("merit");
   if (/실버|백세|고령/.test(sourceText)) eligibility.flags.push("senior");
-  if (/아이사랑|우리아이|자녀/.test(sourceText)) eligibility.flags.push("child");
+  if (/(?:아이사랑|우리아이|아이\s*꿈|아이키움|아이든든|아이통장|자녀|미성년자|법정대리인|조부모|손자녀|부모\s*및\s*자녀|자녀를\s*둔\s*(?:조)?부모)/.test(sourceText)) eligibility.flags.push("child");
   if (/임신|출산/.test(sourceText)) eligibility.flags.push("pregnancyOrBirth");
   if (/사업자등록증|개인사업자|법인/.test(sourceText)) eligibility.flags.push("businessOwner");
   if (/중소기업|재직자/.test(sourceText)) eligibility.flags.push("smallBusinessEmployee");

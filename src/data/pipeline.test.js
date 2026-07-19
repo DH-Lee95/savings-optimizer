@@ -318,6 +318,34 @@ test("parses personal profile eligibility flags separately from action condition
   assert.ok(eligibility.flags.includes("incomeEligible"));
 });
 
+test("normalization merges stale raw eligibility with product name and detail eligibility signals", () => {
+  const military = normalizeRawProduct({
+    ...rawProduct,
+    productName: "NH장병내일준비적금",
+    productType: "installment",
+    eligibility: { flags: ["firstCustomer"], sourceText: "첫거래 우대" },
+    detailConditionText: "의무복무이행자 중 병급여체계 적용 대상 병사 개인",
+  });
+  const child = normalizeRawProduct({
+    ...rawProduct,
+    productName: "아이사랑 정기적금",
+    productType: "installment",
+    eligibility: { flags: [], sourceText: "" },
+    detailConditionText: "만 19세 미만 자녀 2명 이상을 둔 부모 및 자녀",
+  });
+
+  assert.ok(military.eligibility.flags.includes("military"));
+  assert.ok(military.eligibility.flags.includes("firstCustomer"));
+  assert.ok(child.eligibility.flags.includes("child"));
+});
+
+test("eligibility parsing does not mark parent proxy wording in military products as child eligibility", () => {
+  const eligibility = parseEligibilityText("장병내일준비적금 가입자격 확인서 제출, 부모에 의한 대리 가입 가능");
+
+  assert.ok(eligibility.flags.includes("military"));
+  assert.equal(eligibility.flags.includes("child"), false);
+});
+
 test("validates required fields and stale data", () => {
   const active = { ...normalizeRawProduct(rawProduct), reviewStatus: "approved" };
   assert.equal(validateProduct(active, { today: "2026-07-18" }).ok, true);

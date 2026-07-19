@@ -379,18 +379,35 @@ export function parseEligibilityText(value) {
   if (/급여\s*이체|월급/.test(text)) eligibility.flags.push("salaryTransfer");
   if (/카드|실적/.test(text)) eligibility.flags.push("cardSpend");
   if (/주거래|입출금통장/.test(text)) eligibility.flags.push("primaryBankChange");
-  if (/장병|군인|군\s*장병|전역|복무|병사/.test(text)) eligibility.flags.push("military");
+  if (/장병|군인|군\s*장병|전역|복무|병사|현역병|상근예비역|사회복무요원|대체복무요원|의무복무이행자|직업군인|부사관|장교/.test(text)) eligibility.flags.push("military");
   if (/기초생활|차상위|희망나눔|취약/.test(text)) eligibility.flags.push("vulnerableGroup");
   if (/장애/.test(text)) eligibility.flags.push("disability");
   if (/유공/.test(text)) eligibility.flags.push("merit");
   if (/실버|백세|고령/.test(text)) eligibility.flags.push("senior");
-  if (/아이사랑|우리아이|자녀/.test(text)) eligibility.flags.push("child");
+  if (/(?:아이사랑|우리아이|아이\s*꿈|아이키움|아이든든|아이통장|자녀|미성년자|법정대리인|조부모|손자녀|부모\s*및\s*자녀|자녀를\s*둔\s*(?:조)?부모)/.test(text)) eligibility.flags.push("child");
   if (/임신|출산/.test(text)) eligibility.flags.push("pregnancyOrBirth");
   if (/사업자등록증|개인사업자|법인/.test(text)) eligibility.flags.push("businessOwner");
   if (/중소기업|재직자/.test(text)) eligibility.flags.push("smallBusinessEmployee");
   if (/장학|학생/.test(text)) eligibility.flags.push("student");
 
   return eligibility;
+}
+
+function mergeEligibility(existing, inferred) {
+  const base = existing ?? { flags: [], sourceText: "" };
+  const flags = [...new Set([...(base.flags ?? []), ...(inferred.flags ?? [])])];
+  return {
+    ...base,
+    ...Object.fromEntries(
+      Object.entries(inferred).filter(([key, value]) => key !== "flags" && key !== "sourceText" && value != null),
+    ),
+    flags,
+    sourceText: [base.sourceText, inferred.sourceText]
+      .map((value) => String(value ?? "").trim())
+      .filter(Boolean)
+      .filter((value, index, list) => list.indexOf(value) === index)
+      .join(", "),
+  };
 }
 
 function normalizeType(value) {
@@ -443,7 +460,14 @@ export function normalizeRawProduct(raw) {
   const id = raw.id ?? `${type}-${slugify(bank)}-${slugify(name)}`;
   const baseRate = parsePercent(raw.baseRateText ?? raw.baseRate);
   const maxRate = parsePercent(raw.maxRateText ?? raw.maxRate);
-  const eligibility = raw.eligibility ?? parseEligibilityText(raw.eligibilityText ?? raw.conditionText);
+  const inferredEligibility = parseEligibilityText([
+    name,
+    raw.eligibilityText,
+    raw.conditionText,
+    raw.detailConditionText,
+    raw.rateGuideText,
+  ].filter(Boolean).join(", "));
+  const eligibility = mergeEligibility(raw.eligibility, inferredEligibility);
   const amountText = raw.maxAmountText ?? raw.maxAmount;
   const monthlyLimitText = raw.monthlyLimitText || (type === "installment" ? amountText : "");
   const additionalBenefitRules = normalizeAdditionalBenefitRules(raw.additionalBenefitRules);
