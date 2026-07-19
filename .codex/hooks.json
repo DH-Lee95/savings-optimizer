@@ -1,0 +1,54 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/tdd-guard.sh",
+            "timeout": 30,
+            "statusMessage": "Checking TDD guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .codex/hooks/pre_tool_use_policy.py",
+            "timeout": 30,
+            "statusMessage": "Checking Bash command"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .codex/hooks/permission_request_policy.py",
+            "timeout": 30,
+            "statusMessage": "Checking approval request"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .codex/hooks/stop_validation.py",
+            "timeout": 120,
+            "statusMessage": "Running Harness validation"
+          }
+        ]
+      }
+    ]
+  }
+}

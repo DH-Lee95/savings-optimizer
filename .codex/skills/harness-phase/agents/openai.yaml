@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harness Phase"
+  short_description: "Design and run Harness phase steps"
+  default_prompt: "Use $harness-phase to design Harness phase and step files for this project."

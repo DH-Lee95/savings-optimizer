@@ -1,0 +1,23 @@
+{
+  "name": "savings-optimizer-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server/app-server.js",
+    "start": "node server/app-server.js",
+    "fetch-finlife": "node scripts/fetch-finlife-products.js",
+    "fetch-naver": "node scripts/fetch-naver-products.js",
+    "import-finlife": "node scripts/import-finlife-products.js",
+    "import-naver": "node scripts/import-naver-products.js",
+    "import-fss": "node scripts/import-fss-products.js",
+    "review-products": "node scripts/review-products.js",
+    "update-products": "node scripts/update-products.js",
+    "daily-finlife-products": "npm run fetch-finlife && npm run import-finlife && npm run update-products",
+    "daily-naver-products": "npm run fetch-naver && npm run import-naver && npm run update-products",
+    "daily-products": "npm run daily-naver-products",
+    "build": "npm run update-products && node --test tests/*.test.js src/**/*.test.js scripts/*.test.js",
+    "lint": "node --check src/lib/optimizer.js && node --check src/ui/app.js && node --check src/server/paid-access.js && node --check server/app-server.js && node --check src/data/pipeline.js && node --check src/data/importer.js && node --check src/data/review.js && node --check src/data/adapters/fss-csv.js && node --check src/data/adapters/finlife-api.js && node --check src/data/adapters/naver-savings.js && node --check scripts/fetch-finlife-products.js && node --check scripts/import-finlife-products.js && node --check scripts/fetch-naver-products.js && node --check scripts/import-naver-products.js && node --check scripts/update-products.js && node --check scripts/import-fss-products.js && node --check scripts/review-products.js",
+    "test": "node --test tests/*.test.js src/**/*.test.js scripts/*.test.js"
+  }
+}
