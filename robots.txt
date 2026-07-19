@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://savings-optimizer.onrender.com/sitemap.xml

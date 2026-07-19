@@ -86,10 +86,6 @@ export function createPaidAccessStore(seed = []) {
 }
 
 export function createPaidCheckout(store, { email, input, mode = "mock" }) {
-  if (!String(email ?? "").includes("@")) {
-    throw accessError("INVALID_EMAIL", "리포트를 받을 이메일을 입력하세요.", 422);
-  }
-
   const now = new Date().toISOString();
   const accessToken = randomUUID();
   const entitlement = {
@@ -100,7 +96,7 @@ export function createPaidCheckout(store, { email, input, mode = "mock" }) {
     price: PAID_PRODUCT.price,
     originalPrice: PAID_PRODUCT.originalPrice,
     promoText: PAID_PRODUCT.promoText,
-    email,
+    email: String(email ?? "").includes("@") ? email : null,
     inputHash: hashPaidInput(input),
     lockedInput: normalizePaidInput(input),
     status: mode === "mock" ? "paid" : "pending",

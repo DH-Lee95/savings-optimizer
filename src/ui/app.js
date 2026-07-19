@@ -16,8 +16,6 @@ const state = {
     maxAllocationCount: "any",
   },
   detail: {
-    email: "",
-    userBanks: ["국민은행"],
     userRegion: "",
     salaryTransfer: true,
     cardSpend: false,
@@ -69,7 +67,7 @@ function getInput() {
     lumpSum: 0,
     liquidityNeed: "medium",
     excludedProductIds: state.excludedProductIds,
-    userBanks: state.detail.userBanks,
+    userBanks: [],
     activeProductCount: 0,
     activeProducts: [],
     conditions: {
@@ -92,7 +90,6 @@ function saveReport(report, accessToken) {
   const reports = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
   reports.unshift({
     id: report.reportId,
-    email: state.detail.email,
     createdAt: report.generatedAt,
     accessToken,
     report,
@@ -112,13 +109,6 @@ function setQuickField(key, value) {
 }
 
 function setDetailField(key, value) {
-  if (key === "userBanks") {
-    state.detail.userBanks = value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-    return;
-  }
   if (key.startsWith("personalEligibility.")) {
     const profileKey = key.split(".")[1];
     state.detail.personalEligibility[profileKey] = value;
@@ -148,12 +138,6 @@ async function postJson(url, payload) {
 
 async function handlePay(event) {
   event.preventDefault();
-  if (!state.detail.email.includes("@")) {
-    document.querySelector("#email").focus();
-    document.querySelector("#emailError").hidden = false;
-    return;
-  }
-
   state.isPaying = true;
   state.paymentError = "";
   render();
@@ -161,7 +145,6 @@ async function handlePay(event) {
   try {
     const input = getInput();
     const checkout = await postJson("/api/checkout", {
-      email: state.detail.email,
       input,
       productCode: "monthly-savings-report",
     });
@@ -263,15 +246,6 @@ function renderDetail() {
 
       <form id="payForm" class="panel form-stack">
         ${state.paymentError ? `<div class="notice-inline error-box"><strong>결제 확인 필요</strong><span>${state.paymentError}</span></div>` : ""}
-        <label class="field">
-          <span>리포트 받을 이메일</span>
-          <input id="email" name="email" type="email" value="${state.detail.email}" placeholder="you@example.com" autocomplete="email" />
-          <small id="emailError" class="error" hidden>이메일을 입력하세요.</small>
-        </label>
-        <label class="field">
-          <span>현재 쓰는 은행</span>
-          <input name="userBanks" value="${state.detail.userBanks.join(", ")}" placeholder="국민은행, 카카오뱅크" />
-        </label>
         ${selectInput("userRegion", "거주/근무/지원사업 지역", state.detail.userRegion, regionOptions(), "detail")}
         <section class="subsection">
           <h3>개인 가입 조건</h3>

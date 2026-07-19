@@ -38,7 +38,6 @@ test("paid product is a one-week half-price launch offer at 1490 KRW", () => {
 test("paid access token can create one locked report for the purchased input", async () => {
   const store = createPaidAccessStore();
   const checkout = createPaidCheckout(store, {
-    email: "paid@example.com",
     input: baseInput,
     mode: "mock",
   });
@@ -64,7 +63,6 @@ test("paid access token can create one locked report for the purchased input", a
 test("same paid report can be recalculated only by excluding products, not by changing the paid input", async () => {
   const store = createPaidAccessStore();
   const checkout = createPaidCheckout(store, {
-    email: "paid@example.com",
     input: baseInput,
     mode: "mock",
   });
@@ -89,7 +87,6 @@ test("same paid report can be recalculated only by excluding products, not by ch
 test("unpaid or already failed access cannot create a paid report", async () => {
   const store = createPaidAccessStore();
   const checkout = createPaidCheckout(store, {
-    email: "paid@example.com",
     input: baseInput,
     mode: "pending",
   });
@@ -100,4 +97,15 @@ test("unpaid or already failed access cannot create a paid report", async () => 
     excludedProductIds: [],
     createReport: fakeReport,
   }), /PAYMENT_NOT_CONFIRMED/);
+});
+
+test("paid checkout does not require an email address", () => {
+  const store = createPaidAccessStore();
+  const checkout = createPaidCheckout(store, {
+    input: baseInput,
+    mode: "mock",
+  });
+
+  assert.equal(checkout.checkout.status, "paid");
+  assert.equal(checkout.entitlement.paid, true);
 });

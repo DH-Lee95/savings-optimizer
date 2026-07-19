@@ -72,6 +72,16 @@ test("monthly savings app separates personal eligibility from actionable prefere
   assert.match(source, /거주\/근무\/지원사업 지역/);
 });
 
+test("monthly savings app does not ask for email or current bank before payment", () => {
+  const source = readFileSync(new URL("./app.js", import.meta.url), "utf8");
+
+  assert.doesNotMatch(source, /리포트 받을 이메일/);
+  assert.doesNotMatch(source, /현재 쓰는 은행/);
+  assert.doesNotMatch(source, /emailError/);
+  assert.doesNotMatch(source, /autocomplete="email"/);
+  assert.match(source, /userBanks: \[\]/);
+});
+
 test("monthly savings app captures financial sector limit", () => {
   const source = readFileSync(new URL("./app.js", import.meta.url), "utf8");
   assert.match(source, /financialSectorLimit/);
