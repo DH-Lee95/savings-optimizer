@@ -1382,3 +1382,38 @@ test("paid report includes action items and switching gain", () => {
   assert.ok(paid.switchingAnalysis.currentAfterTaxInterest > 0);
   assert.equal(typeof paid.switchingAnalysis.estimatedGain, "number");
 });
+
+test("paid report action items follow the optimal recommendation plan", () => {
+  const easyLowRate = {
+    ...products[1],
+    id: "easy-low-action",
+    bank: "편한은행",
+    name: "쉬운 저금리 예금",
+    baseRate: 2,
+    maxRate: 2,
+    easeScore: 95,
+    firstCustomerOnly: false,
+    conditions: [],
+  };
+  const hardHighRate = {
+    ...products[1],
+    id: "hard-high-action",
+    bank: "고금리은행",
+    name: "불편 고금리 예금",
+    baseRate: 5,
+    maxRate: 5,
+    easeScore: 40,
+    firstCustomerOnly: false,
+    conditions: [],
+  };
+
+  const paid = createPaidReport({
+    ...baseInput,
+    lumpSum: 5000000,
+    monthlySavings: 0,
+    liquidityNeed: "low",
+  }, [easyLowRate, hardHighRate]);
+
+  assert.equal(paid.summary.bestPlan, "최적 추천");
+  assert.equal(paid.actionItems[0].title, "고금리은행 불편 고금리 예금");
+});

@@ -425,3 +425,36 @@ test("builds active catalog without branch-only products while keeping mobile-ca
   assert.deepEqual(catalog.activeProducts.map((product) => product.name), ["모바일 가능 상품"]);
   assert.equal(catalog.rejectedProducts.find((product) => product.name === "대면 전용 상품").validationErrors.includes("branch_only"), true);
 });
+
+test("builds active catalog without randomized variable-rate event products", () => {
+  const rawProducts = [
+    {
+      ...rawProduct,
+      productName: "JB 슈퍼씨드 적금",
+      productType: "installment",
+      maxRateText: "최고 연 13.3%",
+      maxAmountText: "월 1만원 이상 50만원 이하",
+      conditionText: "전월 적금 납입 시 당월 씨드 1개 자동 생성. 월 당첨확률 0.2%, 슈퍼씨드 당첨 시 이벤트 우대금리 연 10.0% 적용",
+      detailConditionText: "슈퍼씨드 미당첨 시 이벤트 우대금리 적용 불가. 당월 슈퍼씨드 개수는 당월 생성되는 전체 씨드 개수에 따라 매월 달라집니다.",
+      reviewStatus: "approved",
+    },
+    {
+      ...rawProduct,
+      productName: "조건 명확 적금",
+      productType: "installment",
+      maxAmountText: "월 50만원 이하",
+      conditionText: "자동이체 등록 시 연 0.3%p",
+      detailConditionText: "자동이체 조건 충족 시 만기해지 때 우대금리 적용",
+      reviewStatus: "approved",
+    },
+  ];
+
+  const catalog = buildActiveCatalog(rawProducts, { today: "2026-07-18" });
+
+  assert.deepEqual(catalog.activeProducts.map((product) => product.name), ["조건 명확 적금"]);
+  assert.equal(
+    catalog.rejectedProducts.find((product) => product.name === "JB 슈퍼씨드 적금")
+      .validationErrors.includes("complex_variable_rate"),
+    true,
+  );
+});

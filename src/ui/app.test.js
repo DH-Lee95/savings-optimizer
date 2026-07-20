@@ -205,3 +205,13 @@ test("paid report UI asks for post-report feedback and coupon email", () => {
   assert.match(source, /couponEmail/);
   assert.match(source, /feedbackMessage/);
 });
+
+test("paid report UI presents a single optimal recommendation instead of three plan cards", () => {
+  const source = readFileSync(new URL("./app.js", import.meta.url), "utf8");
+  const reportViewSource = source.slice(source.indexOf("function renderReport"), source.indexOf("function renderSwitchingAnalysis"));
+
+  assert.match(reportViewSource, /최적 추천 조합/);
+  assert.doesNotMatch(reportViewSource, /plan-tabs/);
+  assert.doesNotMatch(reportViewSource, /Object\.values\(report\.plans\)/);
+  assert.doesNotMatch(reportViewSource, /renderPlanCard/);
+});

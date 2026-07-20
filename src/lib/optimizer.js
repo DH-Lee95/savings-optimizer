@@ -52,7 +52,7 @@ const SPECIAL_ELIGIBILITY_FLAGS = new Set([
 
 const PLAN_LABELS = {
   realistic: "현실형",
-  maxYield: "최대이자형",
+  maxYield: "최적 추천",
   safeSplit: "안전분산형",
 };
 
@@ -1064,11 +1064,6 @@ function buildPlan(input, products, mode) {
   };
 }
 
-function getBestPlan(plans) {
-  const list = Object.values(plans);
-  return [...list].sort((a, b) => b.expectedTotalBenefit - a.expectedTotalBenefit)[0];
-}
-
 function buildTargetAnalysis(input, products, bestPlan) {
   const targetAmount = clampNumber(input.targetAmount);
   if (!targetAmount) return null;
@@ -1133,7 +1128,7 @@ export function optimizeSavings(input, products) {
     safeSplit: buildPlan({ ...normalized, preference: "safe" }, products, "safeSplit"),
   };
 
-  const best = getBestPlan(plans);
+  const best = plans.maxYield;
   const targetAnalysis = buildTargetAnalysis(normalized, products, best);
 
   return {
@@ -1166,7 +1161,7 @@ function summarizeMix(allocations) {
 }
 
 function buildActionItems(report) {
-  const plan = report.plans.realistic;
+  const plan = report.plans.maxYield;
   const items = [];
 
   for (const allocation of plan.allocations) {
@@ -1178,15 +1173,6 @@ function buildActionItems(report) {
       title: `${allocation.bank} ${allocation.productName}`,
       detail: `${amountText} 배분, 예상 적용금리 ${allocation.appliedRate.toFixed(2)}%`,
       url: allocation.officialUrl,
-    });
-  }
-
-  const maxYieldGain = report.plans.maxYield.additionalBenefit - report.plans.realistic.additionalBenefit;
-  if (maxYieldGain > 0) {
-    items.push({
-      title: "우대조건 추가 검토",
-      detail: `최대이자형은 현실형보다 총 예상 혜택을 ${formatWon(maxYieldGain)} 정도 더 받을 수 있습니다.`,
-      url: "",
     });
   }
 

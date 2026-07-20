@@ -351,7 +351,6 @@ button {
 }
 
 .mix-grid,
-.plan-tabs,
 .allocation-list,
 .timing-list {
   display: grid;
@@ -359,7 +358,6 @@ button {
 }
 
 .mix-item,
-.plan-card,
 .metric-row,
 .allocation-row,
 .timing-row {
@@ -374,7 +372,6 @@ button {
 }
 
 .mix-item span,
-.plan-card p,
 .metric-row span {
   margin: 0;
   color: var(--muted);
@@ -382,26 +379,9 @@ button {
 }
 
 .mix-item strong,
-.plan-card strong,
 .metric-row strong {
   color: var(--ink);
   font-size: 16px;
-}
-
-.plan-card {
-  align-items: flex-start;
-}
-
-.plan-card span {
-  color: var(--positive);
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.plan-card small {
-  color: var(--muted);
-  font-size: 12px;
 }
 
 .allocation-row {
@@ -708,8 +688,7 @@ button {
     font-size: 34px;
   }
 
-  .mix-grid,
-  .plan-tabs {
+  .mix-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 

@@ -341,16 +341,12 @@ function renderReport() {
     <main class="screen">
       <section class="result-hero paid">
         <p class="eyebrow">상세 리포트 ${report.reportId}</p>
-        <h2>${report.summary.bestPlan} 기준 총 예상 혜택 ${formatWon(report.summary.bestTotalBenefit)}</h2>
+        <h2>최적 추천 조합 총 예상 혜택 ${formatWon(report.summary.bestTotalBenefit)}</h2>
         <p>${formatRecommendationMode(report.switchingAnalysis.recommendationMode)} · 세후/비과세 이자 ${formatWon(report.summary.bestAfterTaxInterest)}와 추가 혜택 ${formatWon(report.summary.bestAdditionalBenefits)}을 합산했습니다.</p>
         <div class="hero-metric">
           <span>총 예상 최종 금액</span>
           <strong>${formatWon(recommendationPlan.projectedEndingBalance)}</strong>
         </div>
-      </section>
-
-      <section class="plan-tabs">
-        ${Object.values(report.plans).map(renderPlanCard).join("")}
       </section>
 
       ${report.targetAnalysis ? `
@@ -487,26 +483,13 @@ function renderReports() {
         ${reports.length === 0 ? `<p class="empty">저장된 리포트가 없습니다.</p>` : reports.map((item) => `
           <button class="report-row" data-report-id="${item.id}">
             <span>${item.id}</span>
-            <strong>${item.report.summary.bestPlan} · ${formatWon(item.report.summary.bestTotalBenefit)}</strong>
+            <strong>최적 추천 · ${formatWon(item.report.summary.bestTotalBenefit)}</strong>
             <small>${new Date(item.createdAt).toLocaleString("ko-KR")}</small>
           </button>
         `).join("")}
       </section>
     </main>
   `);
-}
-
-function renderPlanCard(plan) {
-  return `
-    <article class="plan-card">
-      <div>
-        <p>${plan.label}</p>
-        <strong>${formatWon(plan.expectedTotalBenefit)}</strong>
-      </div>
-      <span>세후/비과세 이자 ${formatWon(plan.expectedAfterTaxInterest)} · 추가 혜택 ${formatWon(plan.additionalBenefitsTotal)}</span>
-      <small>예상 최종 ${formatWon(plan.projectedEndingBalance)}</small>
-    </article>
-  `;
 }
 
 function formatDate(value) {
@@ -524,7 +507,7 @@ function formatSignedWon(value) {
 }
 
 function latestDataDate(report) {
-  const dates = report.plans.realistic.allocations
+  const dates = report.plans.maxYield.allocations
     .map((allocation) => allocation.updatedAt)
     .filter(Boolean)
     .sort();

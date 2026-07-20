@@ -604,6 +604,27 @@ function isBranchOnlyProduct(product) {
   return hasBranchChannel && !hasRemoteChannel;
 }
 
+function isComplexVariableRateProduct(product) {
+  const raw = product.raw ?? {};
+  const text = [
+    product.name,
+    product.rateGuideText,
+    product.detailConditionText,
+    raw.productName,
+    raw.conditionText,
+    raw.eligibilityText,
+    raw.detailConditionText,
+    raw.rateGuideText,
+  ].map((value) => String(value ?? "").replace(/\s+/g, " ").trim()).join(" ");
+
+  return /월\s*당첨확률|당첨\s*확률|미당첨|랜덤|뽑기|룰렛|눈치게임|행운/.test(text)
+    || /슈퍼\s*씨드|슈퍼씨드/.test(text)
+    || /(?:추첨|당첨)[^.。•\n]{0,80}(?:우대금리|우대이율|금리)/.test(text)
+    || /(?:우대금리|우대이율|금리)[^.。•\n]{0,80}(?:추첨|당첨)/.test(text)
+    || /씨드[^.。•\n]{0,80}(?:확인|생성|획득|당첨|미당첨|개수)/.test(text)
+    || /(?:확인|생성|획득|당첨|미당첨|개수)[^.。•\n]{0,80}씨드/.test(text);
+}
+
 function daysBetween(from, to) {
   const start = new Date(`${from}T00:00:00+09:00`);
   const end = new Date(`${to}T00:00:00+09:00`);
@@ -627,6 +648,7 @@ export function validateProduct(product, options = {}) {
   if (!product.officialUrl) errors.push("missing_official_url");
   if (!product.updatedAt) errors.push("missing_updated_at");
   if (isBranchOnlyProduct(product)) errors.push("branch_only");
+  if (isComplexVariableRateProduct(product)) errors.push("complex_variable_rate");
 
   if (product.updatedAt && daysBetween(product.updatedAt, today) > staleAfterDays) {
     errors.push("stale_data");
