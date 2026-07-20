@@ -11,10 +11,16 @@ import {
   recalculatePaidReport,
   serializePaidAccessStore,
 } from "../src/server/paid-access.js";
+import {
+  createFeedbackStore,
+  serializeFeedbackStore,
+  submitReportFeedback,
+} from "../src/server/feedback.js";
 
 const rootDir = join(fileURLToPath(new URL("..", import.meta.url)));
 const runtimeDir = join(rootDir, "data", "runtime");
 const accessStorePath = join(runtimeDir, "paid-access.json");
+const feedbackStorePath = join(runtimeDir, "report-feedback.json");
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -33,11 +39,26 @@ function loadAccessSeed() {
   }
 }
 
+function loadFeedbackSeed() {
+  if (!existsSync(feedbackStorePath)) return [];
+  try {
+    return JSON.parse(readFileSync(feedbackStorePath, "utf8"));
+  } catch {
+    return [];
+  }
+}
+
 const accessStore = createPaidAccessStore(loadAccessSeed());
+const feedbackStore = createFeedbackStore(loadFeedbackSeed());
 
 function persistAccessStore() {
   mkdirSync(runtimeDir, { recursive: true });
   writeFileSync(accessStorePath, `${JSON.stringify(serializePaidAccessStore(accessStore), null, 2)}\n`);
+}
+
+function persistFeedbackStore() {
+  mkdirSync(runtimeDir, { recursive: true });
+  writeFileSync(feedbackStorePath, `${JSON.stringify(serializeFeedbackStore(feedbackStore), null, 2)}\n`);
 }
 
 function sendJson(response, status, body) {
@@ -107,6 +128,19 @@ async function handleApi(request, response, url) {
       createReport: createServerPaidReport,
     });
     persistAccessStore();
+    sendJson(response, 200, result);
+    return true;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/feedback") {
+    const body = await readJsonBody(request);
+    const result = submitReportFeedback(feedbackStore, accessStore, {
+      accessToken: body.accessToken,
+      reportId: body.reportId,
+      couponEmail: body.couponEmail,
+      message: body.message,
+    });
+    persistFeedbackStore();
     sendJson(response, 200, result);
     return true;
   }

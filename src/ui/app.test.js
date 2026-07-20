@@ -74,11 +74,12 @@ test("monthly savings app separates personal eligibility from actionable prefere
 
 test("monthly savings app does not ask for email or current bank before payment", () => {
   const source = readFileSync(new URL("./app.js", import.meta.url), "utf8");
+  const detailViewSource = source.slice(source.indexOf("function renderDetail"), source.indexOf("function renderReport"));
 
-  assert.doesNotMatch(source, /리포트 받을 이메일/);
-  assert.doesNotMatch(source, /현재 쓰는 은행/);
-  assert.doesNotMatch(source, /emailError/);
-  assert.doesNotMatch(source, /autocomplete="email"/);
+  assert.doesNotMatch(detailViewSource, /리포트 받을 이메일/);
+  assert.doesNotMatch(detailViewSource, /현재 쓰는 은행/);
+  assert.doesNotMatch(detailViewSource, /emailError/);
+  assert.doesNotMatch(detailViewSource, /autocomplete="email"/);
   assert.match(source, /userBanks: \[\]/);
 });
 
@@ -192,4 +193,15 @@ test("paid report UI removes inactive new-savings purpose panel and shows unallo
   assert.doesNotMatch(source, /추천 구분/);
   assert.match(source, /unallocatedMonthlySavings/);
   assert.match(source, /분배되지 않은 월 저축액/);
+});
+
+test("paid report UI asks for post-report feedback and coupon email", () => {
+  const source = readFileSync(new URL("./app.js", import.meta.url), "utf8");
+
+  assert.match(source, /renderFeedbackPanel/);
+  assert.match(source, /\/api\/feedback/);
+  assert.match(source, /여러분의 소중한 의견을 받아 개선하겠습니다/);
+  assert.match(source, /추첨을 통해 1회 무료 이용권/);
+  assert.match(source, /couponEmail/);
+  assert.match(source, /feedbackMessage/);
 });

@@ -14,3 +14,11 @@ test("server starts without eagerly importing the large product catalog", () => 
 test("production server defaults to binding all interfaces for deployment platforms", () => {
   assert.match(source, /process\.env\.NODE_ENV === "production" \? "0\.0\.0\.0" : "127\.0\.0\.1"/);
 });
+
+test("server exposes paid report feedback API and persists it outside source control", () => {
+  assert.match(source, /feedbackStorePath/);
+  assert.match(source, /report-feedback\.json/);
+  assert.match(source, /\/api\/feedback/);
+  assert.match(source, /submitReportFeedback/);
+  assert.match(source, /persistFeedbackStore/);
+});

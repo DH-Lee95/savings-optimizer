@@ -46,6 +46,13 @@ const state = {
   accessToken: null,
   paymentError: "",
   isPaying: false,
+  feedback: {
+    couponEmail: "",
+    feedbackMessage: "",
+    isSubmitting: false,
+    status: "",
+    error: "",
+  },
 };
 
 const app = document.querySelector("#app");
@@ -53,6 +60,14 @@ const app = document.querySelector("#app");
 function toNumber(value) {
   const parsed = Number(String(value).replaceAll(",", ""));
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
 function getInput() {
@@ -169,6 +184,34 @@ async function handlePay(event) {
     state.paymentError = error.message;
   } finally {
     state.isPaying = false;
+    render();
+  }
+}
+
+async function handleFeedbackSubmit(event) {
+  event.preventDefault();
+  state.feedback.isSubmitting = true;
+  state.feedback.status = "";
+  state.feedback.error = "";
+  render();
+
+  try {
+    if (!state.accessToken || !state.paidReport?.reportId) {
+      throw new Error("저장된 결제 리포트 토큰이 없어 피드백을 제출할 수 없습니다.");
+    }
+
+    await postJson("/api/feedback", {
+      accessToken: state.accessToken,
+      reportId: state.paidReport.reportId,
+      couponEmail: state.feedback.couponEmail,
+      message: state.feedback.feedbackMessage,
+    });
+    state.feedback.status = "의견이 저장되었습니다. 무료 이용권 추첨 안내는 입력한 이메일로 연락드리겠습니다.";
+    state.feedback.error = "";
+  } catch (error) {
+    state.feedback.error = error.message;
+  } finally {
+    state.feedback.isSubmitting = false;
     render();
   }
 }
@@ -375,8 +418,33 @@ function renderReport() {
         <p>${report.disclosure.dataNotice}</p>
         <p>${report.disclosure.advisoryNotice}</p>
       </section>
+
+      ${renderFeedbackPanel()}
     </main>
   `);
+}
+
+function renderFeedbackPanel() {
+  return `
+    <section class="panel feedback-panel">
+      <h3>피드백 남기기</h3>
+      <p class="panel-copy">여러분의 소중한 의견을 받아 개선하겠습니다. 추첨을 통해 1회 무료 이용권 드립니다.</p>
+      <form id="feedbackForm" class="form-stack">
+        ${state.feedback.status ? `<div class="notice-inline success-box"><strong>저장 완료</strong><span>${state.feedback.status}</span></div>` : ""}
+        ${state.feedback.error ? `<div class="notice-inline error-box"><strong>저장 실패</strong><span>${state.feedback.error}</span></div>` : ""}
+        <label class="field">
+          <span>개선 의견</span>
+          <textarea name="feedbackMessage" rows="5" maxlength="1000" placeholder="불편했던 점, 더 필요한 조건, 추천 결과에서 헷갈린 부분을 알려주세요.">${escapeHtml(state.feedback.feedbackMessage)}</textarea>
+        </label>
+        <label class="field">
+          <span>쿠폰 받을 이메일</span>
+          <input name="couponEmail" type="email" autocomplete="email" value="${escapeHtml(state.feedback.couponEmail)}" placeholder="name@example.com" />
+        </label>
+        <p class="privacy-copy">이 이메일은 무료 이용권 추첨 안내와 피드백 확인 용도로만 저장됩니다.</p>
+        <button class="primary-button full" type="submit" ${state.feedback.isSubmitting ? "disabled" : ""}>${state.feedback.isSubmitting ? "저장 중" : "의견 보내기"}</button>
+      </form>
+    </section>
+  `;
 }
 
 function renderSwitchingAnalysis(analysis) {
@@ -626,11 +694,12 @@ function regionOptions() {
 function bindEvents() {
   document.querySelector("#quickForm")?.addEventListener("submit", handleSubmitQuick);
   document.querySelector("#payForm")?.addEventListener("submit", handlePay);
+  document.querySelector("#feedbackForm")?.addEventListener("submit", handleFeedbackSubmit);
 
   document.querySelectorAll("input, select").forEach((input) => {
     const updateField = (event) => {
       const target = event.target;
-      if (target.dataset.excludeProductId || !target.name) return;
+      if (target.dataset.excludeProductId || target.closest("#feedbackForm") || !target.name) return;
       const isDetail = target.closest("#payForm") || target.dataset.scope === "detail";
       const value = target.type === "checkbox" ? target.checked : target.value;
       if (isDetail) setDetailField(target.name, value);
@@ -669,6 +738,14 @@ function bindEvents() {
     });
   });
 
+  document.querySelectorAll("#feedbackForm input, #feedbackForm textarea").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      state.feedback[event.target.name] = event.target.value;
+      state.feedback.status = "";
+      state.feedback.error = "";
+    });
+  });
+
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
       state.view = button.dataset.view;
@@ -677,6 +754,13 @@ function bindEvents() {
         state.accessToken = null;
         state.excludedProductIds = [];
         state.paymentError = "";
+        state.feedback = {
+          couponEmail: "",
+          feedbackMessage: "",
+          isSubmitting: false,
+          status: "",
+          error: "",
+        };
       }
       render();
     });

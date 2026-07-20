@@ -26,7 +26,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -118,6 +119,15 @@ button {
 
 .notice-inline.error-box strong {
   color: var(--danger);
+}
+
+.notice-inline.success-box {
+  border-color: #b9d8c3;
+  background: #e9f7ee;
+}
+
+.notice-inline.success-box strong {
+  color: var(--positive);
 }
 
 .intro img {
@@ -223,6 +233,19 @@ button {
   line-height: 1.45;
 }
 
+.panel-copy,
+.privacy-copy {
+  margin: 0;
+  color: var(--body);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.feedback-panel {
+  display: grid;
+  gap: 12px;
+}
+
 .field {
   display: grid;
   gap: 6px;
@@ -236,14 +259,26 @@ button {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   width: 100%;
-  min-height: 46px;
   padding: 0 12px;
   border: 1px solid #cbd5cf;
   border-radius: 6px;
   background: #fff;
   color: var(--ink);
+}
+
+.field input,
+.field select {
+  min-height: 46px;
+}
+
+.field textarea {
+  min-height: 132px;
+  padding-block: 12px;
+  line-height: 1.5;
+  resize: vertical;
 }
 
 .segmented {
